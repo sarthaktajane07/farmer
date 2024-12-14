@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmer's Market E-commerce</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: #4CAF50;
+            padding: 1rem;
+            color: white;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .cart-icon {
+            cursor: pointer;
+            position: relative;
+        }
+
+        #cart-count {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background-color: red;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 50%;
+            font-size: 0.8rem;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .product-card {
+            border: 1px solid #ddd;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .product-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .product-card button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+
+        .cart-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .cart-content {
+            background-color: white;
+            padding: 2rem;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 8px;
+            min-width: 300px;
+        }
+
+        footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">Farmer's Market</div>
+            <div class="cart-icon">
+                <span id="cart-count">0</span>
+                <i class="shopping-cart">🛒</i>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="products-grid" id="products-container">
+            <!-- Products will be dynamically added here -->
+        </section>
+
+        <div class="cart-modal" id="cart-modal">
+            <div class="cart-content">
+                <h2>Shopping Cart</h2>
+                <div id="cart-items"></div>
+                <div class="cart-total">
+                    <strong>Total: $<span id="cart-total">0</span></strong>
+                </div>
+                <button onclick="checkout()">Checkout</button>
+                <button onclick="closeCart()">Close</button>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2023 Farmer's Market. All rights reserved.</p>
+    </footer>
+
+    <script>
+        const products = [
+            {
+                id: 1,
+                name: "Fresh Tomatoes",
+                price: 2.99,
+                image: "https://via.placeholder.com/200x200?text=Tomatoes"
+            },
+            {
+                id: 2,
+                name: "Organic Carrots",
+                price: 1.99,
+                image: "https://via.placeholder.com/200x200?text=Carrots"
+            },
+            {
+                id: 3,
+                name: "Fresh Lettuce",
+                price: 3.49,
+                image: "https://via.placeholder.com/200x200?text=Lettuce"
+            },
+            {
+                id: 4,
+                name: "Farm Eggs",
+                price: 4.99,
+                image: "https://via.placeholder.com/200x200?text=Eggs"
+            }
+        ];
+
+        let cart = [];
+
+        function displayProducts() {
+            const container = document.getElementById('products-container');
+            products.forEach(product => {
+                const productElement = document.createElement('div');
+                productElement.className = 'product-card';
+                productElement.innerHTML = `
+                    <img src="${product.image}" alt="${product.name}">
+                    <h3>${product.name}</h3>
+                    <p>$${product.price.toFixed(2)}</p>
+                    <button onclick="addToCart(${product.id})">Add to Cart</button>
+                `;
+                container.appendChild(productElement);
+            });
+        }
+
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            cart.push(product);
+            updateCartCount();
+            updateCartDisplay();
+        }
+
+        function updateCartCount() {
+            document.getElementById('cart-count').textContent = cart.length;
+        }
+
+        function updateCartDisplay() {
+            const cartItems = document.getElementById('cart-items');
+            cartItems.innerHTML = '';
+            
+            const itemCounts = {};
+            cart.forEach(item => {
+                itemCounts[item.id] = (itemCounts[item.id] || 0) + 1;
+            });
+
+            let total = 0;
+            
+            Object.entries(itemCounts).forEach(([id, count]) => {
+                const product = products.find(p => p.id === parseInt(id));
+                const subtotal = product.price * count;
+                total += subtotal;
+
+                const itemElement = document.createElement('div');
+                itemElement.innerHTML = `
+                    <p>${product.name} x ${count} - $${subtotal.toFixed(2)}</p>
+                    <button onclick="removeFromCart(${product.id})">Remove</button>
+                `;
+                cartItems.appendChild(itemElement);
+            });
+
+            document.getElementById('cart-total').textContent = total.toFixed(2);
+        }
+
+        function removeFromCart(productId) {
+            const index = cart.findIndex(item => item.id === productId);
+            if (index !== -1) {
+                cart.splice(index, 1);
+                updateCartCount();
+                updateCartDisplay();
+            }
+        }
+
+        document.querySelector('.cart-icon').addEventListener('click', () => {
+            document.getElementById('cart-modal').style.display = 'block';
+        });
+
+        function closeCart() {
+            document.getElementById('cart-modal').style.display = 'none';
+        }
+
+        function checkout() {
+            if (cart.length === 0) {
+                alert('Your cart is empty!');
+                return;
+            }
+            
+            alert('Thank you for your purchase!');
+            cart = [];
+            updateCartCount();
+            updateCartDisplay();
+            closeCart();
+        }
+
+        window.onload = () => {
+            displayProducts();
+            updateCartCount();
+        };
+    </script>
+</body>
+</html>
